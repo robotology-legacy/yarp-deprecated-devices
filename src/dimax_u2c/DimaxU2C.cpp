@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2006 Assif Mirza
- * CopyPolicy: Released under the terms of the LGPLv2.1 or later, see LGPL.TXT
+ * CopyPolicy: Released under the terms of the LGPLv2.1 or later, see LICENSE
  *
  */
 
@@ -8,7 +8,7 @@
 #include <yarp/os/all.h>
 #include <yarp/sig/all.h>
 
-#include <yarp/dev/ControlBoardInterfacesImpl.inl>
+#include <yarp/dev/ControlBoardInterfacesImpl-inl.h>
 #include "DimaxU2C.h"
 
 #define DEFAULT_NUM_MOTORS 16
@@ -36,7 +36,7 @@ bool DimaxU2C::open(yarp::os::Searchable& config) {
 
     numJoints = config.check("axes",
                              yarp::os::Value(DEFAULT_NUM_MOTORS),
-                             "number of motors").asInt();
+                             "number of motors").asInt32();
 
     speeds = new double[numJoints];
     accels = new double[numJoints];

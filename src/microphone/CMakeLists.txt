@@ -1,13 +1,16 @@
-# Copyright: (C) 2009 RobotCub Consortium
-# Author: Paul Fitzpatrick
-# CopyPolicy: Released under the terms of the LGPLv2.1 or later, see LGPL.TXT
+# Copyright (C) 2006-2018 Istituto Italiano di Tecnologia (IIT)
+# Copyright (C) 2006-2010 RobotCub Consortium
+# All rights reserved.
+#
+# This software may be modified and distributed under the terms of the
+# BSD-3-Clause license. See the accompanying LICENSE file for details.
 
 yarp_prepare_plugin(microphone
                     CATEGORY device
                     TYPE yarp::dev::MicrophoneDeviceDriver
                     INCLUDE MicrophoneDeviceDriver.h
                     EXTRA_CONFIG WRAPPER=grabber
-                    DEPENDS "CREATE_DEVICE_LIBRARY_MODULES;UNIX OR WIN32;NOT APPLE")
+                    DEPENDS "UNIX OR WIN32;NOT APPLE")
 
 if(NOT SKIP_microphone)
   set(CMAKE_INCLUDE_CURRENT_DIR ON)

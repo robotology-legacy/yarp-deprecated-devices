@@ -1,6 +1,6 @@
 /*
 * Copyright (C) 2007 Mattia Castelnovi
-* CopyPolicy: Released under the terms of the LGPLv2.1 or later, see LGPL.TXT
+* CopyPolicy: Released under the terms of the LGPLv2.1 or later, see LICENSE
 *
 */
 
@@ -457,7 +457,7 @@ protected:
 
 protected:
 	void *system_resources;
-//    yarp::os::Semaphore _mutex;
+//    yarp::os::Mutex _mutex;
 //    yarp::os::Semaphore _done;
 
 

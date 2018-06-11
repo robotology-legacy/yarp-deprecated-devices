@@ -1,7 +1,11 @@
 /*
- * Copyright (C) 2006 Julio Gomes, Alexandre Bernardino
- * CopyPolicy: Released under the terms of the LGPLv2.1 or later, see LGPL.TXT
+ * Copyright (C) 2006-2018 Istituto Italiano di Tecnologia (IIT)
+ * Copyright (C) 2006 Julio Gomes
+ * Copyright (C) 2006 Alexandre Bernardino
+ * All rights reserved.
  *
+ * This software may be modified and distributed under the terms of the
+ * BSD-3-Clause license. See the accompanying LICENSE file for details.
  */
 
 /***********************************************************************
@@ -10,19 +14,10 @@
 
   Windows Native Implementation for sound acquisition
 
-  Adapted from YARP1 - YarpSoundDeviceDriver, YarpSoundCardUtils
-
-  Author of YARP1 (original) Code: Carlos Beltran, Lira-Lab, DIST, UNIGE
-
-  Authors of YARP2 (adapted) Code: Julio Gomes, Alexandre Bernardino, VisLab, ISR-IST
-
-  Contact: jgomes(a)isr.ist.utl.pt, alex(a)isr.ist.utl.pt
-
 ************************************************************************/
 
 #include <MicrophoneDeviceDriver.h>
 #include <yarp/os/all.h>
-#include <ace/Sched_Params.h>
 
 #undef main
 #include <windows.h>
@@ -66,7 +61,7 @@ public:
     //----------------------------------------------------------------------
     //  Constructor/Destructor
     //----------------------------------------------------------------------
-    SoundResources (void) : _bmutex(1),
+    SoundResources (void) : _bmutex(),
                             _new_frame(0),
                             _canpost(true),
                             numSamples(2048),
@@ -88,7 +83,7 @@ public:
     //----------------------------------------------------------------------
     // Variables
     //----------------------------------------------------------------------
-    yarp::os::Semaphore _bmutex;
+    yarp::os::Mutex _bmutex;
     yarp::os::Semaphore _new_frame;
     bool          _canpost;
 
@@ -320,7 +315,7 @@ int SoundResources::_initialize (const SoundOpenParameters& params)
 //--------------------------------------------------------------------------------------
 int SoundResources::_uninitialize (void)
 {
-    _bmutex.wait ();
+    _bmutex.lock ();
 
     m_InRecord = false;
     mixerClose(m_MixerHandle);   // Close mixer
@@ -330,7 +325,7 @@ int SoundResources::_uninitialize (void)
         delete[] _rawBuffer;     // Delete the shared buffer
         _rawBuffer = NULL;
     }
-    _bmutex.post ();
+    _bmutex.unlock ();
 
     return 1;
 }
@@ -420,10 +415,10 @@ int SoundResources::_init (const SoundOpenParameters& params)
     //----------------------------------------------------------------------
     // Initialize the local buffers
     //----------------------------------------------------------------------
-    _bmutex.wait ();
+    _bmutex.lock ();
     _rawBuffer = new unsigned char [dwBufferLength];
-    // ACE_ASSERT (_rawBuffer != NULL);
-    _bmutex.post ();
+    // yAssert(_rawBuffer != NULL);
+    _bmutex.unlock ();
 
     return 1;
 }
@@ -436,9 +431,6 @@ int SoundResources::_init (const SoundOpenParameters& params)
 //
 //  Description: This is a convenient function to recover the pointer to the SoundResources
 //  object
-//
-//    Author: Ing. Carlos Beltran
-//  Revision:  none
 // =====================================================================================
 inline SoundResources& RES(void *res)
 {
@@ -453,7 +445,7 @@ inline SoundResources& RES(void *res)
 //--------------------------------------------------------------------------------------
 int SoundResources::acquireBuffer (void *buffer)
 {
-    _bmutex.wait ();
+    _bmutex.lock ();
     (*(unsigned char **)buffer) = _rawBuffer;
 
     return 1;
@@ -469,7 +461,7 @@ int SoundResources::acquireBuffer (void *buffer)
 int SoundResources::releaseBuffer ()
 {
     _canpost = true;
-    _bmutex.post ();
+    _bmutex.unlock ();
 
     return 1;
 }
@@ -516,7 +508,7 @@ void SoundResources::run()
                             _canpost = false;
                             _new_frame.post();
                         }
-                        _bmutex.post ();
+                        _bmutex.unlock ();
                     }
                     else
                         {
@@ -524,7 +516,6 @@ void SoundResources::run()
                             //  can't acquire, it means the buffer is still in use.
                             //  silently ignores this condition.
                             //----------------------------------------------------------------------
-                            //ACE_DEBUG ((LM_DEBUG, "lost a frame, acq thread\n"));
                             printf("lost a frame, acq thread\n");
                         }
                 }
@@ -540,7 +531,7 @@ void SoundResources::run()
 
                 /* Our main thread is opening the WAVE device */
             case MM_WIM_OPEN:
-                //printf( "ace_Debug: MicrophoneDeviceDriver: sound device opened\n");
+                //printf( "MicrophoneDeviceDriver: sound device opened\n");
                 break;
 
                 /* Our main thread is closing the WAVE device */
@@ -548,7 +539,7 @@ void SoundResources::run()
                 break;
 
             default:
-                //ACE_DEBUG ((LM_DEBUG, "yarpsounddriver: received an unknown message\n"));
+                //printf("yarpsounddriver: received an unknown message\n");
                 break;
 
             }

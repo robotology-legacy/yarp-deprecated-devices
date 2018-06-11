@@ -1,13 +1,15 @@
-# Copyright: (C) 2009 RobotCub Consortium
-# Author: Giorgio Metta, Lorenzo Natale
-# CopyPolicy: Released under the terms of the LGPLv2.1 or later, see LGPL.TXT
+# Copyright (C) 2006-2018 Istituto Italiano di Tecnologia (IIT)
+# All rights reserved.
+#
+# This software may be modified and distributed under the terms of the
+# BSD-3-Clause license. See the accompanying LICENSE file for details.
 
 yarp_prepare_plugin(meiMotionControl
                     CATEGORY device
                     TYPE yarp::dev::MEIMotionControl
                     INCLUDE MEIMotionControl.h
                     EXTRA_CONFIG WRAPPER=controlboard
-                    DEPENDS "CREATE_DEVICE_LIBRARY_MODULES;YARP_COMPILE_UNMAINTAINED"
+                    DEPENDS "YARP_COMPILE_UNMAINTAINED"
                     ADVANCED)
 
 if(NOT SKIP_meiMotionControl)

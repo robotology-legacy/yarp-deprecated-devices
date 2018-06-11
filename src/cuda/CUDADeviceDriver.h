@@ -1,6 +1,10 @@
 /*
+ * Copyright (C) 2006-2018 Istituto Italiano di Tecnologia (IIT)
  * Copyright (C) 2007 Giacomo Spigler
- * CopyPolicy: Released under the terms of the LGPLv2.1 or later, see LGPL.TXT
+ * All rights reserved.
+ *
+ * This software may be modified and distributed under the terms of the
+ * BSD-3-Clause license. See the accompanying LICENSE file for details.
  */
 
 #include <GL/glew.h>
@@ -35,10 +39,10 @@ public:
         // -extract width and height configuration, if present
         // otherwise use 256x256
         // -also extract the number of bytes per pixel (matrix' element) (eg: for image processing is 4 for RGBA, 3 for RGB, 1 for B/W). RGBA is the default value
-        int desiredWidth = config.check("w",yarp::os::Value(256)).asInt();
-        int desiredHeight = config.check("h",yarp::os::Value(256)).asInt();
-        int desiredBytes = config.check("bpp",yarp::os::Value(4)).asInt();
-        int desiredType =  config.check("type",yarp::os::Value(VOCAB_PIXEL_RGB)).asInt();
+        int desiredWidth = config.check("w",yarp::os::Value(256)).asInt32();
+        int desiredHeight = config.check("h",yarp::os::Value(256)).asInt32();
+        int desiredBytes = config.check("bpp",yarp::os::Value(4)).asInt32();
+        int desiredType =  config.check("type",yarp::os::Value(VOCAB_PIXEL_RGB)).asInt32();
         return open(desiredWidth, desiredHeight, desiredBytes, desiredType);
     }
 

@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2007 RobotCub Consortium
  * Author: Paul Fitzpatrick
- * CopyPolicy: Released under the terms of the LGPLv2.1 or later, see LGPL.TXT
+ * CopyPolicy: Released under the terms of the LGPLv2.1 or later, see LICENSE
  *
  * Originally based on "wx-sdl tutorial v1.1", copyright follows
  *
@@ -68,11 +68,12 @@ static int __width = 200;
 static int __height = 200;
 static int __x = wxDefaultPosition.x;
 static int __y = wxDefaultPosition.y;
-static ConstString __title = "yarpview!";
-static ConstString __clicker = "";
+static std::string __title = "yarpview!";
+static std::string __clicker = "";
 static bool wxsdl_running = false;
 
-static Semaphore mutex(1), finished(0);
+static Semaphore finished(0);
+static Mutex mutex();
 
 class SDLPanel : public wxPanel {
     DECLARE_CLASS(SDLPanel)
@@ -82,7 +83,7 @@ private:
     SDL_Surface *screen;
     int wscreen, hscreen;
     int wwin, hwin;
-    //Semaphore mutex;
+    //Mutex mutex;
     bool stopped;
     BufferedPort<Bottle> clicks;
     bool clicking;
@@ -127,14 +128,14 @@ public:
     void putImage(ImageOf<PixelRgb>& image);
 
     void stop() {
-        mutex.wait();
+        mutex.lock();
         stopped = true;
         wxsdl_stopped = true;
         if (screen) {
             SDL_FreeSurface(screen);
             screen = NULL;
         }
-        mutex.post();
+        mutex.unlock();
     }
 };
 
@@ -185,14 +186,14 @@ SDLPanel::~SDLPanel() {
         printf("Huh, that was unusually long...\n");
     }
 
-    mutex.wait();
+    mutex.lock();
     printf("sdl panel dead\n");
 
     if (screen) {
         SDL_FreeSurface(screen);
         screen = NULL;
     }
-    mutex.post();
+    mutex.unlock();
 }
 
 void SDLPanel::onPaint(wxPaintEvent& ev) {
@@ -200,7 +201,7 @@ void SDLPanel::onPaint(wxPaintEvent& ev) {
 
     //printf("taking permit\n");
 
-    mutex.wait();
+    mutex.lock();
 
     // can't draw if the screen doesn't exist yet
     if (screen) {
@@ -230,7 +231,7 @@ void SDLPanel::onPaint(wxPaintEvent& ev) {
         dc.Clear();
     }
 
-    mutex.post();
+    mutex.unlock();
 
     //printf("returning permit\n");
 
@@ -243,7 +244,7 @@ void SDLPanel::onIdle(wxIdleEvent &) {
 
 void SDLPanel::onClick(wxMouseEvent & event) {
     if (clicking) {
-        mutex.wait();
+        mutex.lock();
         int cx = event.m_x;
         int cy = event.m_y;
         if (wwin!=wshow && wwin!=0) {
@@ -252,7 +253,7 @@ void SDLPanel::onClick(wxMouseEvent & event) {
         if (hwin!=hshow && hwin!=0) {
             cy = (int)(cy*(((double)hshow)/hwin));
         }
-        mutex.post();
+        mutex.unlock();
         /*
         printf("got clicked %d %d / %d %d / %d %d\n", cx, cy,
                wwin, hwin,
@@ -260,8 +261,8 @@ void SDLPanel::onClick(wxMouseEvent & event) {
         */
         Bottle& bot = clicks.prepare();
         bot.clear();
-        bot.addInt(cx);
-        bot.addInt(cy);
+        bot.addInt32(cx);
+        bot.addInt32(cy);
         clicks.write();
     }
     return;
@@ -284,12 +285,12 @@ void SDLPanel::putImage(ImageOf<PixelRgb>& image) {
         SystemClock::delaySystem(0.1);
     }
 
-    mutex.wait();
+    mutex.lock();
     wshow = image.width();
     hshow = image.height();
 
     if (stopped||wxsdl_stopped) {
-        mutex.post();
+        mutex.unlock();
         return;
     }
 
@@ -333,7 +334,7 @@ void SDLPanel::putImage(ImageOf<PixelRgb>& image) {
             }
         }
         
-        mutex.post();
+        mutex.unlock();
 
 #if defined(_WIN32)
         Refresh();
@@ -345,7 +346,7 @@ void SDLPanel::putImage(ImageOf<PixelRgb>& image) {
 #endif
     } else {
 
-        mutex.post();
+        mutex.unlock();
     }
 }
 
@@ -395,10 +396,10 @@ public:
     SDLFrame();
 
     virtual ~SDLFrame() {
-        mutex.wait();
+        mutex.lock();
         printf("frame gone\n");
         wxsdl_framed = false;
-        mutex.post();
+        mutex.unlock();
     }
 
     /**
@@ -422,13 +423,13 @@ public:
 
 
 static void wxsdlStop() {
-    mutex.wait();
+    mutex.lock();
     bool working = wxsdl_drawing;
     wxsdl_stopped = true;
     if (working) {
         wxsdl_post = 1;
     }
-    mutex.post();
+    mutex.unlock();
     if (working) {
         finished.wait();
     }
@@ -608,19 +609,19 @@ void WxsdlWriter::run() {
 bool WxsdlWriter::open(yarp::os::Searchable & config) {
     int width = config.check("w",
                              Value(128),
-                             "width of viewer").asInt();
+                             "width of viewer").asInt32();
     if (!config.check("w")) {
         width = config.check("width",
                              Value(128),
-                             "width of viewer").asInt();
+                             "width of viewer").asInt32();
     }
     int height = config.check("h",
                               Value(128),
-                              "height of viewer").asInt();
+                              "height of viewer").asInt32();
     if (!config.check("h")) {
         height = config.check("height",
                               Value(128),
-                              "height of viewer").asInt();
+                              "height of viewer").asInt32();
     }
     __title = config.check("title",
                            Value("yarpview"),
@@ -634,13 +635,13 @@ bool WxsdlWriter::open(yarp::os::Searchable & config) {
     if (config.check("x")) {
         __x = config.check("x",
                            Value(0),
-                           "x coordinate of viewer").asInt();
+                           "x coordinate of viewer").asInt32();
     }
 
     if (config.check("y")) {
         __y = config.check("y",
                            Value(0),
-                           "y coordinate of viewer").asInt();
+                           "y coordinate of viewer").asInt32();
     }
 
     if (config.check("out")) {
@@ -657,10 +658,10 @@ bool WxsdlWriter::open(yarp::os::Searchable & config) {
     
 bool WxsdlWriter::close() {
     printf("WxsdlWriter::close\n");
-    mutex.wait();
+    mutex.lock();
     if (active) {
         active = false; 
-        mutex.post();
+        mutex.unlock();
         wxsdlStop();
         wxMutexGuiEnter();
         if (wxsdl_framed) {
@@ -671,7 +672,7 @@ bool WxsdlWriter::close() {
         wxMutexGuiLeave();
         stop();
     } else {
-        mutex.post();
+        mutex.unlock();
     }
 
     return true;
@@ -688,29 +689,29 @@ bool WxsdlWriter::putImage(yarp::sig::ImageOf<yarp::sig::PixelRgb> & image) {
     //printf("FINISHED WAITING for wxsdl\n");
 
 
-    mutex.wait();
+    mutex.lock();
     if (!active) {
-        mutex.post();
+        mutex.unlock();
         return false;
     }
     if (wxsdl_stopped) {
-        mutex.post();
+        mutex.unlock();
         return false;
     }
 
     wxsdl_drawing = true;
-    mutex.post();
+    mutex.unlock();
 
     //printf("Putting image\n");
     bool result = wxGetApp().putImage(image);
 
-    mutex.wait();
+    mutex.lock();
     wxsdl_drawing = false;
     while (wxsdl_post>0) {
         finished.post();
         wxsdl_post--;
     }
-    mutex.post();
+    mutex.unlock();
 
     return result;
 }

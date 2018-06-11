@@ -1,8 +1,10 @@
 /*
- * Copyright (C) 2007 RobotCub Consortium
- * Authors: Paul Fitzpatrick
- * CopyPolicy: Released under the terms of the LGPLv2.1 or later, see LGPL.TXT
+ * Copyright (C) 2006-2018 Istituto Italiano di Tecnologia (IIT)
+ * Copyright (C) 2006-2010 RobotCub Consortium
+ * All rights reserved.
  *
+ * This software may be modified and distributed under the terms of the
+ * BSD-3-Clause license. See the accompanying LICENSE file for details.
  */
 
 #include "StageControl.h"
@@ -17,9 +19,9 @@ using namespace yarp::dev;
 using namespace yarp::os;
 
 bool StageControl::open(yarp::os::Searchable& config) {
-  ConstString worldFile = config.check("world",Value(""),
+  std::string worldFile = config.check("world",Value(""),
                                        "stage world file").asString();
-  ConstString robotName = config.check("robot",Value(""),
+  std::string robotName = config.check("robot",Value(""),
                                        "robot name").asString();
   if (worldFile=="") {
     printf("Please specify a world file\n");
@@ -77,18 +79,18 @@ bool StageControl::open(yarp::os::Searchable& config) {
 
 bool StageControl::close() {
   stop();
-  mutex.wait();
+  mutex.lock();
   if (world!=NULL) {
     stg_world_destroy( world );
     world = NULL;
   }
-  mutex.post();
+  mutex.unlock();
   return true;
 }
 
 
 bool StageControl::velocityMove(const double *v) {
-  mutex.wait();
+  mutex.lock();
   printf("Velocity move...\n");
   stg_position_cmd_t cmd;
   memset(&cmd,0,sizeof(cmd));
@@ -100,7 +102,7 @@ bool StageControl::velocityMove(const double *v) {
   }
 
   stg_model_set_cmd( position, &cmd, sizeof(cmd));
-  mutex.post();
+  mutex.unlock();
 
   return true;
 }
@@ -113,19 +115,19 @@ bool StageControl::velocityMove(const double *v) {
 
 void StageControl::run() {
   while (!isStopping()) {
-    mutex.wait();
+    mutex.lock();
     int result = stg_world_update( world,0 );
-    mutex.post();
+    mutex.unlock();
     printf("Tick...\n");
     if (result!=0) break;
     SystemClock::delaySystem(0.05);
   }
-  mutex.wait();
+  mutex.lock();
   if (world!=NULL) {
     stg_world_destroy( world );
     world = NULL;
   }
-  mutex.post();
+  mutex.unlock();
 }
 
 

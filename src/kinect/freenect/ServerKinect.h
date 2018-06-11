@@ -87,7 +87,7 @@ public:
     }
 
     addStamp = prop.check("stamp","if present, add timestamps to data");
-    ConstString robotName = prop.check("name",Value("/MDS"), "prefix for port names").asString().c_str();
+    std::string robotName = prop.check("name",Value("/MDS"), "prefix for port names").asString().c_str();
 
     writer.attach(p);
 
@@ -145,12 +145,12 @@ public:
           {
             case VOCAB_WIDTH:
               ok = true;
-              response.addInt(kinect->width());
+              response.addInt32(kinect->width());
               rec = true;
               break;
             case VOCAB_HEIGHT:
               ok = true;
-              response.addInt(kinect->height());
+              response.addInt32(kinect->height());
               rec = true;
               break;
           }
